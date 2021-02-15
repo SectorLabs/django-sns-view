@@ -1,7 +1,6 @@
 from base64 import b64decode
 import logging
 import re
-import six
 import requests
 import pem
 

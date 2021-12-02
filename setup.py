@@ -9,7 +9,7 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 
 setup(
     name='django-sns-view',
-    version=app.__version__,
+    version=os.environ.get('VERSION', app.__version__),
     author='Deeptesh Chagan',
     packages=[
         'django_sns_view', 'django_sns_view.tests'],

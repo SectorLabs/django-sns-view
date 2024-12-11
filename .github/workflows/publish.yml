@@ -63,7 +63,7 @@ jobs:
           PYPI_REPO_USERNAME: ${{ vars.PYPI_REPO_USERNAME }}
           PYPI_REPO_PASSWORD: ${{ secrets.PYPI_REPO_PASSWORD }}
         run: |
-          python -m twine upload --repository-url "${PYPI_REPO_URL}"
-            --username "${PYPI_REPO_USERNAME}"
-            --password "${PYPI_REPO_PASSWORD}"
+          python -m twine upload --repository-url "${PYPI_REPO_URL}" \
+            --username "${PYPI_REPO_USERNAME}" \
+            --password "${PYPI_REPO_PASSWORD}" \
             dist/*

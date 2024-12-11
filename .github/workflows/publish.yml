@@ -1,0 +1,47 @@
+name: publish
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: publish-release
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: publish
+
+    runs-on: org-amd64-1c-2g-20g
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install git dependencies
+        run: |
+          sudo apt-get update
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install --yes --no-install-recommends git
+
+      - name: Install packages
+        run: pip install --progress-bar off -e '.[publish]'
+
+      - name: Compute & patch version number
+        id: version-number
+        run: |
+          python3 versioning.py --version ${{ github.event.release.tag_name }} patch
+
+      - name: Package django-sns-view as a Python library
+        run: python -m build --wheel -o dist/
+
+      - name: Release django-sns-view-${{ github.event.release.tag_name }} to PyPi repo
+        run: |
+          python -m twine upload --repository-url "${{ vars.PYPI_REPO_URL }}" \
+                      --username "${{ vars.PYPI_REPO_USERNAME }}" \
+                      --password "${{ secrets.PYPI_REPO_PASSWORD }}" \
+                      dist/*

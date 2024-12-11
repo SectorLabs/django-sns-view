@@ -23,7 +23,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'Django>=1.7',
-        'pyopenssl>=0.13.1',
+        'pyopenssl==24.2.1',
         'pem>=16.0.0',
         'requests>=2.18.0',
         'cffi>=1.11.5'

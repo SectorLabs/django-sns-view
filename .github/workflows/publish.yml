@@ -1,47 +1,69 @@
-name: publish
+name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - v*
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The version string you would like to release."
+        type: string
+        required: true
 
 concurrency:
-  group: publish-release
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   publish:
-    name: publish
+    name: Publish
 
-    runs-on: org-amd64-1c-2g-20g
+    runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.8'
           cache: 'pip'
 
-      - name: Install git dependencies
+      - name: Compute version
+        id: version
         run: |
-          sudo apt-get update
-          DEBIAN_FRONTEND=noninteractive sudo apt-get install --yes --no-install-recommends git
+          version=""
+          case "${{ github.event_name }}" in
+            push)
+              version="${GITHUB_REF#refs/*/}"
+              ;;
+            workflow_dispatch)
+              version="${{ inputs.version }}"
+              ;;
+            *)
+              echo "::error::Unknown event ${{ github.event_name }}. Cannot compute package version."
+              exit 1
+              ;;
+          esac
 
-      - name: Install packages
-        run: pip install --progress-bar off -e '.[publish]'
+          echo "result=$(echo $version | sed 's/^v//g')" >> $GITHUB_OUTPUT
 
-      - name: Compute & patch version number
-        id: version-number
+      - name: Ensure build & publishing tools
+        run: pip install build==0.7.0 twine==3.7.0
+
+      - name: Package
+        env:
+          VERSION: ${{ steps.version.outputs.result }}
+        run: python -m build
+
+      - name: Release
+        env:
+          PYPI_REPO_URL: ${{ vars.PYPI_REPO_URL }}
+          PYPI_REPO_USERNAME: ${{ vars.PYPI_REPO_USERNAME }}
+          PYPI_REPO_PASSWORD: ${{ secrets.PYPI_REPO_PASSWORD }}
         run: |
-          python3 versioning.py --version ${{ github.event.release.tag_name }} patch
-
-      - name: Package django-sns-view as a Python library
-        run: python -m build --wheel -o dist/
-
-      - name: Release django-sns-view-${{ github.event.release.tag_name }} to PyPi repo
-        run: |
-          python -m twine upload --repository-url "${{ vars.PYPI_REPO_URL }}" \
-                      --username "${{ vars.PYPI_REPO_USERNAME }}" \
-                      --password "${{ secrets.PYPI_REPO_PASSWORD }}" \
-                      dist/*
+          python -m twine upload --repository-url "${PYPI_REPO_URL}"
+            --username "${PYPI_REPO_USERNAME}"
+            --password "${PYPI_REPO_PASSWORD}"
+            dist/*

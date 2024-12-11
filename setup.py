@@ -27,8 +27,6 @@ setup(
         'pem>=16.0.0',
         'requests>=2.18.0',
         'cffi>=1.11.5',
-        'build==0.7.0',
-        'twine==3.7.0'
     ],
     keywords="aws sns django",
     classifiers=[

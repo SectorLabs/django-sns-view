@@ -30,12 +30,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: latest
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
 
       - name: Compute version
         id: version
@@ -57,13 +53,13 @@ jobs:
           echo "result=$(echo $version | sed 's/^v//g')" >> $GITHUB_OUTPUT
 
       - name: Set version
-        run: poetry version ${{ steps.version.outputs.result }}
+        run: sed -i "s/^version = .*/version = \"${{ steps.version.outputs.result }}\"/" pyproject.toml
 
       - name: Build package
-        run: poetry build
+        run: uv build
 
       - name: Install twine
-        run: pip install twine
+        run: uv pip install twine --system
 
       - name: Release
         env:
